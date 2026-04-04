@@ -1,0 +1,131 @@
+{
+  "theme": "LIGHT",
+  "archetype": "1 (Organic & Earthy)",
+  "emotional_tone": "Trustworthy, grounded, professional, tactile.",
+  "reasoning": "A finance management dashboard requires trust, stability, and clarity. Instead of a sterile 'fintech-bro' dark mode or generic SaaS look, we use an Organic & Earthy archetype. This creates a tactile 'physical ledger' feel, improving user focus and reducing eye strain while remaining highly distinctive.",
+  "colors": {
+    "light": {
+      "background": "#FBFBF9",
+      "surface": "#FFFFFF",
+      "surface_secondary": "#F5F4F0",
+      "text_primary": "#1C1C1A",
+      "text_secondary": "#5F5E5B",
+      "border": "#E8E6E1",
+      "primary": "#4A6B53",
+      "primary_hover": "#3D5A45",
+      "destructive": "#B85C38",
+      "destructive_hover": "#9C4C2D",
+      "warning": "#D48D4C",
+      "income_accent": "#4A6B53",
+      "expense_accent": "#B85C38",
+      "savings_accent": "#D48D4C",
+      "glass": "rgba(251, 251, 249, 0.75)"
+    },
+    "dark": {
+      "background": "#121413",
+      "surface": "#1A1D1A",
+      "surface_secondary": "#232724",
+      "text_primary": "#E8EAE8",
+      "text_secondary": "#949A96",
+      "border": "#2C332E",
+      "primary": "#6B8E7B",
+      "primary_hover": "#80A490",
+      "destructive": "#D17757",
+      "destructive_hover": "#E08768",
+      "warning": "#E5A367",
+      "income_accent": "#6B8E7B",
+      "expense_accent": "#D17757",
+      "savings_accent": "#E5A367",
+      "glass": "rgba(18, 20, 19, 0.75)"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "headings": "Manrope",
+      "body": "IBM Plex Sans",
+      "mono": "IBM Plex Mono"
+    },
+    "scales": {
+      "h1": "text-3xl sm:text-4xl tracking-tight font-bold",
+      "h2": "text-xl sm:text-2xl tracking-tight font-semibold",
+      "h3": "text-lg font-medium tracking-tight",
+      "overline": "text-[10px] sm:text-xs font-bold tracking-[0.2em] uppercase",
+      "body": "text-sm font-normal leading-relaxed",
+      "data_table": "text-sm font-mono tabular-nums tracking-tight"
+    },
+    "rules": [
+      "No Inter, Roboto, or Open Sans for headings.",
+      "Never center-align paragraphs, inputs, or dense table data.",
+      "Use 'tabular-nums' for all financial figures.",
+      "Card titles and overlines MUST use the 'overline' scale (uppercase, wide tracking) for a technical/editorial contrast."
+    ]
+  },
+  "spacing_and_layout": {
+    "grid_system": "Control Room Grid",
+    "base_grid": "grid-cols-1 md:grid-cols-2 xl:grid-cols-4",
+    "gap": "gap-4 sm:gap-6",
+    "layout_patterns": {
+      "dashboard_metrics": "col-span-1 (4 columns total on xl)",
+      "trend_chart": "col-span-1 xl:col-span-3 row-span-2",
+      "donut_chart": "col-span-1 xl:col-span-1 row-span-2",
+      "recent_transactions": "col-span-1 xl:col-span-2",
+      "insights_cards": "col-span-1 xl:col-span-2",
+      "heatmap": "col-span-1 xl:col-span-4"
+    },
+    "rules": [
+      "Grid items MUST be direct children of the grid container.",
+      "Override default stretch behavior with 'items-start' on the grid, and 'self-stretch' on specific items.",
+      "Ensure ample padding (p-6 or p-8) inside bordered containers to avoid text collision."
+    ]
+  },
+  "surface_strategies": {
+    "style": "Grid Borders / Technical Ledger",
+    "details": "Expose the grid. Use 1px subtle borders (border-border) with flat backgrounds. Avoid heavy drop shadows. Create a tactile 'paper ledger' feel.",
+    "header": "Crystal Glass variant: backdrop-blur-xl bg-background/80 with a 1px solid bottom border.",
+    "sidebar": "Flat background (surface_secondary), border-r border-border.",
+    "cards": "Flat background (surface), rounded-md, border border-border, shadow-sm hover:shadow-md transition-shadow duration-200."
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-white hover:bg-primary_hover rounded-md px-4 py-2 font-medium transition-colors",
+      "secondary": "bg-surface border border-border text-text_primary hover:bg-surface_secondary rounded-md px-4 py-2 font-medium transition-colors",
+      "destructive": "bg-destructive text-white hover:bg-destructive_hover rounded-md px-4 py-2 font-medium transition-colors",
+      "ghost": "hover:bg-surface_secondary text-text_secondary hover:text-text_primary rounded-md px-4 py-2 transition-colors"
+    },
+    "badges": "px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-[0.1em] uppercase border",
+    "inputs": "bg-surface border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all",
+    "tables": "w-full text-left border-collapse. Headers: text-xs uppercase tracking-wider text-text_secondary border-b border-border p-3. Cells: p-3 border-b border-border text-sm.",
+    "charts": "Use Recharts. Tooltips must match the tactile card style (border, flat bg, small text). Use income_accent, expense_accent, and savings_accent strictly."
+  },
+  "motion_and_interactions": {
+    "hover": "Cards: -translate-y-[1px] shadow-md transition-all duration-200. Buttons: scale-[0.98] active state.",
+    "focus": "High contrast ring-2 ring-primary/50 ring-offset-1 ring-offset-background.",
+    "transitions": "Use specific properties (e.g., transition-colors, transition-transform) rather than 'transition-all' broadly."
+  },
+  "icons": {
+    "library": "@phosphor-icons/react",
+    "style": "Regular weight by default, Fill weight for active states. Scale: 16px to 24px."
+  },
+  "media": {
+    "login_hero_bg": {
+      "url": "https://images.unsplash.com/photo-1593024960993-26423171086d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwYXJjaGl0ZWN0dXJlJTIwc3RvbmV8ZW58MHx8fHwxNzc1MzQ2MjMzfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Minimalist architecture/stone composition (green plant on white/brown table). Use as a large hero image on the right side of the split login page.",
+      "overlay": "bg-black/10 to bg-transparent gradient overlay to ensure it breathes but feels grounded."
+    },
+    "insights_texture_bg": {
+      "url": "https://images.unsplash.com/photo-1737276746515-19ea864a6b80?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMHRleHR1cmUlMjBwYXBlciUyMG5hdHVyYWx8ZW58MHx8fHwxNzc1MzQ2MjMyfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Abstract textured off-white background. Can be used as a subtle background layer for the Insights page or Anomaly Cards (with heavy transparency/blend-mode) to reinforce the tactile ledger feel."
+    }
+  },
+  "instructions_to_main_agent": [
+    "INSTALLATION: Install @phosphor-icons/react and recharts for visualizations.",
+    "FONTS: Configure Tailwind to load 'Manrope' for font-sans (headings) and 'IBM Plex Sans' for body text. IBM Plex Mono for tables/numbers.",
+    "STYLING: Strictly map the custom colors from this JSON into tailwind.config.js under 'theme.extend.colors'. Do NOT use default tailwind slate/gray colors for surfaces.",
+    "LAYOUT: Build a persistent Sidebar and a Top Header. Ensure the main content area has ample padding (e.g., p-6 or p-8).",
+    "CARDS: Avoid overly rounded corners. Use rounded-md (max 6px radius) and 1px borders to mimic a physical paper ledger.",
+    "CHARTS: For the Dashboard trend line chart, use smooth lines (monotone) with area gradient fills. For the Category Donut chart, ensure labels are clear and colors map to the Earthy accent palette (Moss, Terracotta, Ochre).",
+    "TESTING: Every interactive element (Buttons, Inputs, Table headers, Export menu items, Role switcher, Chart containers) MUST have a 'data-testid' attribute using kebab-case role-based naming (e.g., data-testid='dashboard-export-btn').",
+    "DARK MODE: Implement a standard Tailwind 'dark:' class strategy. Ensure all backgrounds, text colors, and borders shift to the defined dark mode palette.",
+    "ACCESSIBILITY: Ensure minimum 4.5:1 contrast ratio. Forms in the CRUD modal must have clear labels and focus states."
+  ]
+}
