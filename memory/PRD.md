@@ -5,39 +5,42 @@ Role-aware finance management dashboard with RBAC, financial transaction managem
 
 ## Architecture
 - **Backend**: FastAPI (Python) with MongoDB via Motor (async driver)
-- **Frontend**: React 18 (JavaScript) with Tailwind CSS, shadcn/ui, Recharts
+- **Frontend**: React 18 (JavaScript) with Tailwind CSS, shadcn/ui, Recharts, Framer Motion
 - **Auth**: JWT (PyJWT) + bcrypt password hashing
-- **Database**: MongoDB (collections: users, categories, transactions, audit_logs)
+- **Database**: MongoDB (collections: users, categories, transactions, audit_logs, budget_goals, recurring_templates)
 - **State Management**: React Context (auth) + TanStack Query (server state)
 
 ## User Personas
-1. **Admin** - Full CRUD on transactions, user management, all analytics
+1. **Admin** - Full CRUD on transactions/categories/users/budgets/templates, all analytics
 2. **Analyst** - Read transactions + insights/analytics access
 3. **Viewer** - Read-only: dashboard + transactions list
 
 ## Core Requirements (Static)
-- JWT auth with role-based access control (RBAC)
-- Dashboard with summary cards, trend charts, category breakdown, recent transactions
-- Transaction CRUD with soft delete, filtering, sorting, pagination
-- Advanced insights: spending heatmap, anomaly detection (z-score), monthly comparison
-- User management (admin only)
-- Dark/light theme toggle
-- CSV/JSON export
-- Audit logging
+- JWT auth with RBAC, Dashboard analytics, Transaction CRUD, Insights, User Management
+- Dark/light mode, CSV/JSON export, Audit logging
 
-## What's Been Implemented (2026-04-05)
-- [x] Complete backend API with all endpoints (auth, transactions, dashboard, users, categories, audit logs)
-- [x] JWT authentication with bcrypt password hashing
-- [x] RBAC enforcement at API and UI level
+## What's Been Implemented
+
+### Iteration 1 (2026-04-05)
+- [x] Complete backend API with all endpoints
+- [x] JWT authentication + RBAC
 - [x] Seed data: 3 demo users, 12 categories, 125+ transactions
-- [x] Dashboard page: 4 summary cards, trend area chart, category donut chart, recent transactions, key insights
-- [x] Transactions page: data table, search, type/category filters, pagination, CRUD modal, export CSV/JSON
-- [x] Insights page: spending heatmap, monthly comparison bar chart, anomaly cards, top categories, top tags
-- [x] Users page: user table, role management, invite user dialog
-- [x] Login page: email/password form, quick demo buttons, hero image
-- [x] AppShell: sidebar navigation, topbar with user menu, theme toggle
-- [x] Dark/light mode with Tailwind dark: classes
-- [x] Organic & Earthy design system (Manrope + IBM Plex Sans fonts)
+- [x] Dashboard: summary cards, trend chart, donut chart, recent transactions, insights
+- [x] Transactions: data table, search, filters, pagination, CRUD modal, CSV/JSON export
+- [x] Insights: spending heatmap, monthly comparison, anomaly detection, top categories/tags
+- [x] Users: user table, role management, invite dialog
+- [x] Login: email/password form, quick demo buttons, hero image
+- [x] AppShell: sidebar navigation, topbar, dark/light mode
+
+### Iteration 2 (2026-04-05)
+- [x] Date Range Picker (Dashboard + Transactions) using Calendar + Popover
+- [x] Framer Motion page transitions on all pages
+- [x] Category CRUD management page (admin)
+- [x] Budget Goal tracking (backend + API)
+- [x] Recurring Transaction Templates (backend + UI dropdown to apply)
+- [x] Financial Health Score widget on dashboard (composite score: savings rate, spending consistency, budget adherence, income stability)
+- [x] Dark mode improved (sidebar toggle + dropdown menu toggle, persisted to localStorage)
+- [x] Mobile responsive sidebar overlay
 
 ## Test Credentials
 | Role | Email | Password |
@@ -47,26 +50,12 @@ Role-aware finance management dashboard with RBAC, financial transaction managem
 | Viewer | viewer@demo.com | Demo@1234 |
 
 ## Prioritized Backlog
-### P0 (Critical)
-- All core features implemented
+### P1
+- Budget goals UI page for creating/managing goals
+- Recurring templates UI management page
 
-### P1 (Important)
-- Date range picker for dashboard/transactions
-- Token refresh on 401 (partially implemented)
-- Mobile responsive optimization
-
-### P2 (Nice to have)
-- Framer Motion page transitions
-- Zustand for state management (currently using React Context)
-- Full-text search with MongoDB text index
-- Budget goal setting and tracking
-- Recurring transaction templates
+### P2
 - Multi-currency support
 - WebSocket real-time updates
-
-## Next Tasks
-1. Add date range picker to dashboard and transactions filters
-2. Add Framer Motion animations for page transitions
-3. Implement category CRUD in admin UI
-4. Add more robust error boundaries
-5. Mobile layout optimization
+- Full-text search with MongoDB text index
+- Report PDF export
