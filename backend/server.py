@@ -1042,6 +1042,10 @@ async def root():
 async def health():
     return {"status": "ok"}
 
+@app.get("/health")
+async def app_health():
+    return {"status": "ok"}
+
 # Include router & middleware
 app.include_router(api_router)
 

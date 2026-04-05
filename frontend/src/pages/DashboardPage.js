@@ -138,7 +138,8 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
           </CardHeader>
-          <CardContent className="h-72" data-testid="trend-chart">
+          <CardContent className="pt-0" data-testid="trend-chart">
+            <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -163,6 +164,7 @@ export default function DashboardPage() {
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -171,8 +173,9 @@ export default function DashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-bold tracking-[0.2em] uppercase text-muted-foreground">Expense Breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="h-72 flex flex-col items-center" data-testid="category-chart">
+          <CardContent className="pt-0" data-testid="category-chart">
             {pieData.length > 0 ? (
+              <div style={{ width: '100%', height: 280 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="45%" innerRadius={50} outerRadius={80} dataKey="value" nameKey="name" paddingAngle={2}>
@@ -187,8 +190,9 @@ export default function DashboardPage() {
                   <Legend wrapperStyle={{ fontSize: '11px' }} />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">No expense data</div>
+              <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">No expense data</div>
             )}
           </CardContent>
         </Card>
