@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { transactionsApi, categoriesApi } from '@/lib/api';
+import { transactionsApi, categoriesApi, recurringTemplatesApi } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,12 +10,14 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Search, Download, Edit2, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, FileJson, FileSpreadsheet, X } from 'lucide-react';
+import { Plus, Search, Download, Edit2, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, FileJson, FileSpreadsheet, Repeat, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
+import { DateRangePicker } from '@/components/DateRangePicker';
+import { PageTransition, FadeIn } from '@/components/MotionWrappers';
 
 export default function TransactionsPage() {
   const { hasPermission } = useAuth();
@@ -33,6 +35,8 @@ export default function TransactionsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTxn, setEditingTxn] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [dateRange, setDateRange] = useState({ from: null, to: null });
+  const [templateOpen, setTemplateOpen] = useState(false);
 
   // Form state
   const [formAmount, setFormAmount] = useState('');
@@ -54,6 +58,8 @@ export default function TransactionsPage() {
     ...(typeFilter !== 'all' && { type: typeFilter }),
     ...(categoryFilter !== 'all' && { category_id: categoryFilter }),
     ...(searchDebounced && { search: searchDebounced }),
+    ...(dateRange.from && { date_from: dateRange.from.toISOString().split('T')[0] }),
+    ...(dateRange.to && { date_to: dateRange.to.toISOString().split('T')[0] }),
   };
 
   const { data: txnData, isLoading } = useQuery({
@@ -89,6 +95,20 @@ export default function TransactionsPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['transactions'] }); queryClient.invalidateQueries({ queryKey: ['dashboard'] }); toast.success('Transaction deleted'); setDeleteConfirm(null); },
     onError: (err) => toast.error(err.response?.data?.detail || 'Failed to delete'),
   });
+
+  const { data: templatesData } = useQuery({
+    queryKey: ['recurring-templates'],
+    queryFn: () => recurringTemplatesApi.list().then(r => r.data.data),
+    enabled: canWrite,
+  });
+
+  const applyTemplateMutation = useMutation({
+    mutationFn: (id) => recurringTemplatesApi.apply(id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['transactions'] }); queryClient.invalidateQueries({ queryKey: ['dashboard'] }); toast.success('Recurring transaction applied'); },
+    onError: (err) => toast.error(err.response?.data?.detail || 'Failed to apply template'),
+  });
+
+  const templates = templatesData || [];
 
   const openCreateForm = () => {
     setEditingTxn(null);
@@ -163,13 +183,34 @@ export default function TransactionsPage() {
   };
 
   return (
+    <PageTransition>
     <div className="space-y-6" data-testid="transactions-page">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight" data-testid="transactions-heading">Transactions</h1>
           <p className="text-sm text-muted-foreground mt-1">{pagination.total_items} total records</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <DateRangePicker from={dateRange.from} to={dateRange.to} onSelect={(r) => { setDateRange(r); setPage(1); }} />
+          {canWrite && templates.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" data-testid="recurring-templates-btn">
+                  <Repeat className="h-4 w-4 mr-1" /> Templates
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Apply Recurring Template</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {templates.map(t => (
+                  <DropdownMenuItem key={t.id} onClick={() => applyTemplateMutation.mutate(t.id)} data-testid={`apply-template-${t.id}`}>
+                    <Play className="h-3.5 w-3.5 mr-2" />
+                    <span className="truncate">{t.description || t.category?.name} - ${(t.amount_cents / 100).toFixed(2)}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" data-testid="export-menu-btn">
@@ -411,5 +452,6 @@ export default function TransactionsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </PageTransition>
   );
 }

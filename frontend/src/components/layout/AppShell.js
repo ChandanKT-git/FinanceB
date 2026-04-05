@@ -9,13 +9,14 @@ import {
 import { Switch } from '@/components/ui/switch';
 import {
   LayoutDashboard, ArrowLeftRight, Lightbulb, Users, Menu, X,
-  LogOut, ChevronDown, Sun, Moon,
+  LogOut, ChevronDown, Sun, Moon, Tag, Repeat,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard:read' },
   { path: '/transactions', label: 'Transactions', icon: ArrowLeftRight, permission: 'transactions:read' },
   { path: '/insights', label: 'Insights', icon: Lightbulb, permission: 'insights:read' },
+  { path: '/categories', label: 'Categories', icon: Tag, permission: 'transactions:write' },
   { path: '/users', label: 'Users', icon: Users, permission: 'users:read' },
 ];
 
@@ -150,7 +151,7 @@ export default function AppShell({ children }) {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel className="text-xs text-muted-foreground">{user?.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="md:hidden" onClick={toggleTheme}>
+                <DropdownMenuItem onClick={toggleTheme} data-testid="theme-toggle-menu">
                   {dark ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
                   {dark ? 'Light Mode' : 'Dark Mode'}
                 </DropdownMenuItem>

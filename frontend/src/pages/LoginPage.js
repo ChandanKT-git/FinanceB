@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 
 const DEMO_USERS = [
   { label: 'Admin', email: 'admin@demo.com', password: 'Demo@1234', role: 'admin' },
@@ -60,7 +61,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex" data-testid="login-page">
       {/* Left: Form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background">
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }} className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background">
         <div className="w-full max-w-md space-y-8">
           <div>
             <div className="flex items-center gap-2 mb-8">
@@ -140,10 +141,10 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Right: Hero image */}
-      <div className="hidden lg:block lg:flex-1 relative">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }} className="hidden lg:block lg:flex-1 relative">
         <img
           src="https://images.unsplash.com/photo-1593024960993-26423171086d?crop=entropy&cs=srgb&fm=jpg&w=1200&q=80"
           alt="FinLedger"
@@ -158,7 +159,7 @@ export default function LoginPage() {
             Track, analyse, and visualise your organisation's financial data with role-based access control.
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

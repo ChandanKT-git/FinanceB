@@ -153,6 +153,37 @@ class CategoryUpdate(BaseModel):
     color_hex: Optional[str] = None
     icon: Optional[str] = None
 
+class BudgetGoalCreate(BaseModel):
+    category_id: Optional[str] = None
+    name: str
+    target_cents: int
+    period: str = "monthly"  # monthly, weekly
+
+class BudgetGoalUpdate(BaseModel):
+    name: Optional[str] = None
+    target_cents: Optional[int] = None
+    period: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class RecurringTemplateCreate(BaseModel):
+    amount: float
+    type: str
+    category_id: str
+    description: str = ""
+    frequency: str = "monthly"  # daily, weekly, monthly, yearly
+    tags: List[str] = []
+    notes: str = ""
+
+class RecurringTemplateUpdate(BaseModel):
+    amount: Optional[float] = None
+    type: Optional[str] = None
+    category_id: Optional[str] = None
+    description: Optional[str] = None
+    frequency: Optional[str] = None
+    tags: Optional[List[str]] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
+
 # ============================================================
 # AUDIT LOGGING
 # ============================================================
@@ -1030,6 +1061,230 @@ async def seed_data():
 @app.on_event("startup")
 async def startup():
     await seed_data()
+
+# ============================================================
+# BUDGET GOALS (admin only)
+# ============================================================
+@api_router.get("/v1/budget-goals")
+async def get_budget_goals(current_user: dict = Depends(get_current_user)):
+    goals = await db.budget_goals.find({"is_active": True}, {"_id": 0}).to_list(100)
+    # Enrich with current spending
+    now = datetime.now(timezone.utc)
+    month_start = now.replace(day=1).strftime("%Y-%m-%d")
+    month_end = now.strftime("%Y-%m-%d")
+    
+    for goal in goals:
+        query = {"is_deleted": {"$ne": True}, "type": "expense", "date": {"$gte": month_start, "$lte": month_end}}
+        if goal.get("category_id"):
+            query["category_id"] = goal["category_id"]
+        spent_agg = await db.transactions.aggregate([
+            {"$match": query},
+            {"$group": {"_id": None, "total": {"$sum": "$amount_cents"}}}
+        ]).to_list(1)
+        goal["spent_cents"] = spent_agg[0]["total"] if spent_agg else 0
+        goal["progress_percent"] = round((goal["spent_cents"] / goal["target_cents"]) * 100, 1) if goal["target_cents"] > 0 else 0
+    
+    return {"success": True, "data": goals}
+
+@api_router.post("/v1/budget-goals")
+async def create_budget_goal(goal: BudgetGoalCreate, request: Request, current_user: dict = Depends(require_role("admin"))):
+    doc = {
+        "id": str(uuid.uuid4()),
+        "category_id": goal.category_id,
+        "name": goal.name,
+        "target_cents": goal.target_cents,
+        "period": goal.period,
+        "is_active": True,
+        "created_by": current_user["id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.budget_goals.insert_one(doc)
+    doc.pop("_id", None)
+    await log_audit(current_user["id"], "budget_goal.create", "budget_goal", doc["id"], ip=request.client.host if request.client else None)
+    return {"success": True, "data": doc}
+
+@api_router.patch("/v1/budget-goals/{goal_id}")
+async def update_budget_goal(goal_id: str, goal: BudgetGoalUpdate, request: Request, current_user: dict = Depends(require_role("admin"))):
+    updates = {k: v for k, v in goal.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    await db.budget_goals.update_one({"id": goal_id}, {"$set": updates})
+    updated = await db.budget_goals.find_one({"id": goal_id}, {"_id": 0})
+    if not updated:
+        raise HTTPException(status_code=404, detail="Budget goal not found")
+    return {"success": True, "data": updated}
+
+@api_router.delete("/v1/budget-goals/{goal_id}")
+async def delete_budget_goal(goal_id: str, request: Request, current_user: dict = Depends(require_role("admin"))):
+    result = await db.budget_goals.update_one({"id": goal_id}, {"$set": {"is_active": False}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Budget goal not found")
+    return {"success": True, "message": "Budget goal removed"}
+
+# ============================================================
+# RECURRING TEMPLATES (admin only)
+# ============================================================
+@api_router.get("/v1/recurring-templates")
+async def get_recurring_templates(current_user: dict = Depends(get_current_user)):
+    templates = await db.recurring_templates.find({"is_active": True}, {"_id": 0}).to_list(100)
+    cat_ids = list(set(t.get("category_id") for t in templates if t.get("category_id")))
+    cats = {}
+    if cat_ids:
+        for c in await db.categories.find({"id": {"$in": cat_ids}}, {"_id": 0}).to_list(100):
+            cats[c["id"]] = c
+    for t in templates:
+        t["category"] = cats.get(t.get("category_id"), {})
+    return {"success": True, "data": templates}
+
+@api_router.post("/v1/recurring-templates")
+async def create_recurring_template(tmpl: RecurringTemplateCreate, request: Request, current_user: dict = Depends(require_role("admin"))):
+    cat = await db.categories.find_one({"id": tmpl.category_id}, {"_id": 0})
+    if not cat:
+        raise HTTPException(status_code=400, detail="Category not found")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "amount_cents": int(round(tmpl.amount * 100)),
+        "type": tmpl.type,
+        "category_id": tmpl.category_id,
+        "description": tmpl.description,
+        "frequency": tmpl.frequency,
+        "tags": tmpl.tags,
+        "notes": tmpl.notes,
+        "is_active": True,
+        "last_applied": None,
+        "created_by": current_user["id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.recurring_templates.insert_one(doc)
+    doc.pop("_id", None)
+    await log_audit(current_user["id"], "recurring_template.create", "recurring_template", doc["id"], ip=request.client.host if request.client else None)
+    return {"success": True, "data": doc}
+
+@api_router.post("/v1/recurring-templates/{template_id}/apply")
+async def apply_recurring_template(template_id: str, request: Request, current_user: dict = Depends(require_role("admin"))):
+    tmpl = await db.recurring_templates.find_one({"id": template_id, "is_active": True}, {"_id": 0})
+    if not tmpl:
+        raise HTTPException(status_code=404, detail="Template not found")
+    txn_doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],
+        "amount_cents": tmpl["amount_cents"],
+        "type": tmpl["type"],
+        "category_id": tmpl["category_id"],
+        "description": tmpl.get("description", ""),
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "tags": tmpl.get("tags", []) + ["recurring"],
+        "notes": tmpl.get("notes", ""),
+        "is_deleted": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "updated_by": current_user["id"]
+    }
+    await db.transactions.insert_one(txn_doc)
+    txn_doc.pop("_id", None)
+    await db.recurring_templates.update_one({"id": template_id}, {"$set": {"last_applied": datetime.now(timezone.utc).isoformat()}})
+    return {"success": True, "data": txn_doc}
+
+@api_router.delete("/v1/recurring-templates/{template_id}")
+async def delete_recurring_template(template_id: str, request: Request, current_user: dict = Depends(require_role("admin"))):
+    result = await db.recurring_templates.update_one({"id": template_id}, {"$set": {"is_active": False}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {"success": True, "message": "Template removed"}
+
+# ============================================================
+# FINANCIAL HEALTH SCORE
+# ============================================================
+@api_router.get("/v1/dashboard/health-score")
+async def financial_health_score(current_user: dict = Depends(get_current_user)):
+    now = datetime.now(timezone.utc)
+    month_start = now.replace(day=1).strftime("%Y-%m-%d")
+    month_end = now.strftime("%Y-%m-%d")
+    
+    # Current month data
+    query = {"is_deleted": {"$ne": True}, "date": {"$gte": month_start, "$lte": month_end}}
+    txns = await db.transactions.find(query, {"_id": 0}).to_list(10000)
+    income = sum(t["amount_cents"] for t in txns if t["type"] == "income")
+    expenses = sum(t["amount_cents"] for t in txns if t["type"] == "expense")
+    
+    # Previous month data
+    prev_start = (now.replace(day=1) - timedelta(days=1)).replace(day=1).strftime("%Y-%m-%d")
+    prev_end = (now.replace(day=1) - timedelta(days=1)).strftime("%Y-%m-%d")
+    prev_query = {"is_deleted": {"$ne": True}, "date": {"$gte": prev_start, "$lte": prev_end}}
+    prev_txns = await db.transactions.find(prev_query, {"_id": 0}).to_list(10000)
+    prev_income = sum(t["amount_cents"] for t in prev_txns if t["type"] == "income")
+    prev_expenses = sum(t["amount_cents"] for t in prev_txns if t["type"] == "expense")
+    
+    # Component scores (each 0-100)
+    # 1. Savings rate score
+    savings_rate = ((income - expenses) / income * 100) if income > 0 else 0
+    savings_score = min(100, max(0, savings_rate * 2.5))  # 40% savings = 100
+    
+    # 2. Spending consistency score (lower variance = better)
+    daily_spends = {}
+    for t in txns:
+        if t["type"] == "expense":
+            daily_spends[t["date"]] = daily_spends.get(t["date"], 0) + t["amount_cents"]
+    if len(daily_spends) > 1:
+        mean_spend = sum(daily_spends.values()) / len(daily_spends)
+        variance = sum((v - mean_spend)**2 for v in daily_spends.values()) / len(daily_spends)
+        cv = (math.sqrt(variance) / mean_spend) if mean_spend > 0 else 0
+        consistency_score = max(0, min(100, 100 - cv * 50))
+    else:
+        consistency_score = 50
+    
+    # 3. Budget adherence score
+    goals = await db.budget_goals.find({"is_active": True}, {"_id": 0}).to_list(100)
+    if goals:
+        adherence_scores = []
+        for goal in goals:
+            gq = {"is_deleted": {"$ne": True}, "type": "expense", "date": {"$gte": month_start, "$lte": month_end}}
+            if goal.get("category_id"):
+                gq["category_id"] = goal["category_id"]
+            spent_agg = await db.transactions.aggregate([{"$match": gq}, {"$group": {"_id": None, "total": {"$sum": "$amount_cents"}}}]).to_list(1)
+            spent = spent_agg[0]["total"] if spent_agg else 0
+            ratio = spent / goal["target_cents"] if goal["target_cents"] > 0 else 0
+            adherence_scores.append(max(0, min(100, (1 - max(0, ratio - 1)) * 100)))
+        budget_score = sum(adherence_scores) / len(adherence_scores)
+    else:
+        budget_score = 70  # Neutral if no goals set
+    
+    # 4. Income stability (compared to previous month)
+    if prev_income > 0:
+        income_change = abs(income - prev_income) / prev_income
+        income_score = max(0, min(100, 100 - income_change * 100))
+    else:
+        income_score = 50
+    
+    # Weighted composite
+    composite = (savings_score * 0.35 + consistency_score * 0.25 + budget_score * 0.25 + income_score * 0.15)
+    composite = round(min(100, max(0, composite)), 1)
+    
+    # Grade
+    if composite >= 80: grade = "Excellent"
+    elif composite >= 60: grade = "Good"
+    elif composite >= 40: grade = "Fair"
+    else: grade = "Needs Attention"
+    
+    return {
+        "success": True,
+        "data": {
+            "score": composite,
+            "grade": grade,
+            "components": {
+                "savings_rate": {"score": round(savings_score, 1), "label": "Savings Rate", "detail": f"{savings_rate:.1f}%"},
+                "spending_consistency": {"score": round(consistency_score, 1), "label": "Spending Consistency"},
+                "budget_adherence": {"score": round(budget_score, 1), "label": "Budget Adherence"},
+                "income_stability": {"score": round(income_score, 1), "label": "Income Stability"}
+            },
+            "tips": [
+                "Set budget goals for your top spending categories" if not goals else "Great job tracking budgets!",
+                "Try to maintain consistent daily spending patterns",
+                f"Your savings rate is {savings_rate:.1f}% - aim for at least 20%"
+            ]
+        }
+    }
 
 # ============================================================
 # HEALTH CHECK

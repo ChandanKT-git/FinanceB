@@ -90,6 +90,7 @@ export const dashboardApi = {
   trend: (params) => api.get('/dashboard/trend', { params }),
   recent: () => api.get('/dashboard/recent'),
   insights: (params) => api.get('/dashboard/insights', { params }),
+  healthScore: () => api.get('/dashboard/health-score'),
 };
 
 // Users API
@@ -106,6 +107,22 @@ export const categoriesApi = {
   list: () => api.get('/categories'),
   create: (data) => api.post('/categories', data),
   update: (id, data) => api.patch(`/categories/${id}`, data),
+};
+
+// Budget Goals API
+export const budgetGoalsApi = {
+  list: () => api.get('/budget-goals'),
+  create: (data) => api.post('/budget-goals', data),
+  update: (id, data) => api.patch(`/budget-goals/${id}`, data),
+  delete: (id) => api.delete(`/budget-goals/${id}`),
+};
+
+// Recurring Templates API
+export const recurringTemplatesApi = {
+  list: () => api.get('/recurring-templates'),
+  create: (data) => api.post('/recurring-templates', data),
+  apply: (id) => api.post(`/recurring-templates/${id}/apply`),
+  delete: (id) => api.delete(`/recurring-templates/${id}`),
 };
 
 export default api;

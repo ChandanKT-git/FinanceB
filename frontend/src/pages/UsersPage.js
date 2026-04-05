@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { UserPlus, Shield, ShieldCheck, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageTransition } from '@/components/MotionWrappers';
 
 const ROLE_CONFIG = {
   admin: { label: 'Admin', color: 'bg-primary/10 text-primary border-primary/20', icon: ShieldCheck },
@@ -91,6 +92,7 @@ export default function UsersPage() {
   }
 
   return (
+    <PageTransition>
     <div className="space-y-6" data-testid="users-page">
       <div className="flex items-center justify-between">
         <div>
@@ -217,5 +219,6 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </PageTransition>
   );
 }

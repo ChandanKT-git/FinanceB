@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, TrendingUp, TrendingDown, Activity, Calendar, Tag } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import { PageTransition, FadeIn } from '@/components/MotionWrappers';
 
 const INCOME_COLOR = 'var(--fin-income)';
 const EXPENSE_COLOR = 'var(--fin-expense)';
@@ -55,6 +56,7 @@ export default function InsightsPage() {
   const maxCatSpend = Math.max(...topCategories.map(c => Math.max(c.current, c.previous)), 1);
 
   return (
+    <PageTransition>
     <div className="space-y-6" data-testid="insights-page">
       <div>
         <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight" data-testid="insights-heading">Insights</h1>
@@ -229,5 +231,6 @@ export default function InsightsPage() {
         </Card>
       )}
     </div>
+    </PageTransition>
   );
 }

@@ -275,6 +275,166 @@ class FinLedgerAPITester:
                 self.log_test(f"{role} blocked from users", success,
                              "" if success else f"Should have returned 403: {data}")
 
+    def test_budget_goals(self):
+        """Test budget goals endpoints (admin only)"""
+        print("\n🔍 Testing Budget Goals...")
+        
+        if not self.tokens.get("admin"):
+            print("❌ No admin token available for budget goals testing")
+            return
+            
+        admin_token = self.tokens["admin"]
+        
+        # Test get budget goals
+        success, data = self.make_request('GET', 'budget-goals', 
+                                         token=admin_token)
+        self.log_test("Get budget goals", success,
+                     "" if success else f"Failed: {data}")
+        
+        # Test create budget goal
+        create_data = {
+            "name": "Test Budget Goal",
+            "target_cents": 50000,  # $500
+            "period": "monthly"
+        }
+        
+        success, data = self.make_request('POST', 'budget-goals', 
+                                         create_data, token=admin_token)
+        if success:
+            goal_id = data.get("data", {}).get("id")
+            self.log_test("Create budget goal", True)
+            
+            # Test update budget goal
+            update_data = {"name": "Updated Test Budget Goal"}
+            success, data = self.make_request('PATCH', f'budget-goals/{goal_id}',
+                                             update_data, token=admin_token)
+            self.log_test("Update budget goal", success,
+                         "" if success else f"Failed: {data}")
+            
+            # Test delete budget goal
+            success, data = self.make_request('DELETE', f'budget-goals/{goal_id}',
+                                             token=admin_token)
+            self.log_test("Delete budget goal", success,
+                         "" if success else f"Failed: {data}")
+        else:
+            self.log_test("Create budget goal", False, f"Failed: {data}")
+
+    def test_recurring_templates(self):
+        """Test recurring templates endpoints (admin only)"""
+        print("\n🔍 Testing Recurring Templates...")
+        
+        if not self.tokens.get("admin"):
+            print("❌ No admin token available for recurring templates testing")
+            return
+            
+        admin_token = self.tokens["admin"]
+        
+        # Test get recurring templates
+        success, data = self.make_request('GET', 'recurring-templates', 
+                                         token=admin_token)
+        self.log_test("Get recurring templates", success,
+                     "" if success else f"Failed: {data}")
+        
+        # Test create recurring template (need valid category)
+        cat_success, cat_data = self.make_request('GET', 'categories', 
+                                                 token=admin_token)
+        if cat_success and cat_data.get("data"):
+            category_id = cat_data["data"][0]["id"]
+            
+            create_data = {
+                "amount": 25.00,
+                "type": "expense",
+                "category_id": category_id,
+                "description": "Test recurring template",
+                "frequency": "monthly",
+                "tags": ["recurring", "test"],
+                "notes": "API test template"
+            }
+            
+            success, data = self.make_request('POST', 'recurring-templates', 
+                                             create_data, token=admin_token)
+            if success:
+                template_id = data.get("data", {}).get("id")
+                self.log_test("Create recurring template", True)
+                
+                # Test apply recurring template
+                success, data = self.make_request('POST', f'recurring-templates/{template_id}/apply',
+                                                 token=admin_token)
+                self.log_test("Apply recurring template", success,
+                             "" if success else f"Failed: {data}")
+                
+                # Test delete recurring template
+                success, data = self.make_request('DELETE', f'recurring-templates/{template_id}',
+                                                 token=admin_token)
+                self.log_test("Delete recurring template", success,
+                             "" if success else f"Failed: {data}")
+            else:
+                self.log_test("Create recurring template", False, f"Failed: {data}")
+
+    def test_financial_health_score(self):
+        """Test financial health score endpoint"""
+        print("\n🔍 Testing Financial Health Score...")
+        
+        for role in ["admin", "analyst", "viewer"]:
+            if role in self.tokens:
+                success, data = self.make_request('GET', 'dashboard/health-score',
+                                                 token=self.tokens[role])
+                self.log_test(f"{role} get health score", success,
+                             "" if success else f"Failed: {data}")
+                
+                # Verify response structure
+                if success and data.get("data"):
+                    health_data = data["data"]
+                    has_score = "score" in health_data
+                    has_grade = "grade" in health_data
+                    has_components = "components" in health_data
+                    
+                    self.log_test(f"{role} health score structure", 
+                                 has_score and has_grade and has_components,
+                                 "Missing score, grade, or components" if not (has_score and has_grade and has_components) else "")
+
+    def test_categories_crud(self):
+        """Test categories CRUD operations (admin only)"""
+        print("\n🔍 Testing Categories CRUD...")
+        
+        if not self.tokens.get("admin"):
+            print("❌ No admin token available for categories CRUD testing")
+            return
+            
+        admin_token = self.tokens["admin"]
+        
+        # Test create category
+        create_data = {
+            "name": "Test Category",
+            "type": "expense",
+            "color_hex": "#ff6b6b",
+            "icon": "test-icon"
+        }
+        
+        success, data = self.make_request('POST', 'categories', 
+                                         create_data, token=admin_token)
+        if success:
+            category_id = data.get("data", {}).get("id")
+            self.log_test("Create category", True)
+            
+            # Test update category
+            update_data = {"name": "Updated Test Category", "color_hex": "#4ecdc4"}
+            success, data = self.make_request('PATCH', f'categories/{category_id}',
+                                             update_data, token=admin_token)
+            self.log_test("Update category", success,
+                         "" if success else f"Failed: {data}")
+        else:
+            self.log_test("Create category", False, f"Failed: {data}")
+        
+        # Test non-admin cannot create categories
+        if "viewer" in self.tokens:
+            success, data = self.make_request('POST', 'categories', 
+                                             create_data, 
+                                             token=self.tokens["viewer"], 
+                                             expected_status=403)
+            self.log_test("Viewer blocked from creating categories", success,
+                         "" if success else f"Should have returned 403: {data}")
+
     def test_rbac_permissions(self):
         """Test role-based access control"""
         print("\n🔍 Testing RBAC Permissions...")
@@ -296,8 +456,12 @@ class FinLedgerAPITester:
             self.test_health_check()
             self.test_authentication()
             self.test_categories()
+            self.test_categories_crud()
             self.test_transactions()
             self.test_dashboard()
+            self.test_financial_health_score()
+            self.test_budget_goals()
+            self.test_recurring_templates()
             self.test_insights()
             self.test_users()
             self.test_rbac_permissions()
